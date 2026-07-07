@@ -1,7 +1,5 @@
 # CodeKeep — Project Overview
 
-> ⚠️ **Note:** the original notes referred to the product as "DevStash" in one spot. Standardized on **CodeKeep** throughout this doc — update if that was intentional.
-
 ## 1. Problem
 
 Developers keep their essentials scattered across too many tools:
@@ -333,6 +331,12 @@ enum ContentType {
 - Inspiration: **Notion**, **Linear**, **Raycast**
 - Syntax highlighting in code blocks
 
+## Screenshots
+
+Refer to the sceenshots below a base for the dashboard UI. It does not have to be exact. Use it as a reference:
+- @context/screenshots/dashboard-ui-main.png
+- @context/screenshots/dashboard-ui-drawer.png
+
 ### Layout
 - **Sidebar** *(collapsible → drawer on mobile)*: item types with links (Snippets, Commands, etc.), latest collections
 - **Main area**: grid of collection cards, background-color-coded by the dominant item type they contain; items within a collection show as color-coded cards (border = type color)
@@ -379,7 +383,6 @@ flowchart LR
 ## 9. Open Questions / Things to Resolve
 
 - [ ] Should Redis caching be in scope for v1, or purely a later optimization?
-- [ ] Confirm final naming: **CodeKeep** vs. **DevStash** (notes used both).
 - [ ] Define exact export formats (JSON only, or JSON + ZIP of files?).
 - [ ] Decide on rate limits / abuse prevention for AI endpoints, especially for free-tier trial access during dev.
 - [ ] Custom item types (Pro, "later") — rough scope this out even if not v1.
