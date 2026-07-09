@@ -1,10 +1,10 @@
 import { Pin, Star } from "lucide-react";
 
 import { itemTypeIcons, itemTypesBySlug } from "@/lib/item-type-meta";
-import type { ItemSummary } from "@/lib/mock-data";
+import type { DashboardItem } from "@/lib/db/items";
 
 interface RecentItemRowProps {
-  item: ItemSummary;
+  item: DashboardItem;
 }
 
 /**
