@@ -234,4 +234,114 @@ export function useDebounce<T>(value: T, delay = 300): T {
     collectionIds: ["col_useful_links"],
     updatedLabel: "4d ago",
   },
+  {
+    id: "item_zustand_store",
+    title: "Zustand store setup",
+    type: "snippet",
+    description: "Minimal typed store with a selector hook.",
+    language: "typescript",
+    content: `import { create } from "zustand"
+
+interface CounterState {
+  count: number
+  increment: () => void
+}
+
+export const useCounter = create<CounterState>((set) => ({
+  count: 0,
+  increment: () => set((s) => ({ count: s.count + 1 })),
+}))`,
+    tags: ["react", "state", "typescript"],
+    isFavorite: true,
+    isPinned: false,
+    collectionIds: ["col_react_patterns"],
+    updatedLabel: "5d ago",
+  },
+  {
+    id: "item_git_undo_commit",
+    title: "Undo last commit (keep changes)",
+    type: "command",
+    description: "Soft-reset the most recent commit.",
+    language: "bash",
+    content: "git reset --soft HEAD~1",
+    tags: ["git", "vcs"],
+    isFavorite: true,
+    isPinned: false,
+    collectionIds: ["col_shell_toolkit"],
+    updatedLabel: "6d ago",
+  },
+  {
+    id: "item_refactor_prompt",
+    title: "Refactor to composition",
+    type: "prompt",
+    description: "Ask the model to break a component into composable parts.",
+    content:
+      "Refactor the following component to favor composition over configuration. Extract focused subcomponents, lift shared logic into hooks, and keep each piece under one responsibility. Explain each extraction briefly.",
+    tags: ["ai", "refactor"],
+    isFavorite: false,
+    isPinned: false,
+    collectionIds: ["col_ai_prompt_library"],
+    updatedLabel: "1w ago",
+  },
+  {
+    id: "item_tailwind_tokens",
+    title: "Tailwind v4 theme tokens",
+    type: "note",
+    description: "How CSS-first config replaces tailwind.config.js.",
+    content:
+      "Tailwind v4 configures the theme in CSS via @theme blocks in globals.css — no tailwind.config.js. Custom colors, radii, and fonts become CSS variables and auto-generate utility classes.",
+    tags: ["tailwind", "css"],
+    isFavorite: false,
+    isPinned: false,
+    collectionIds: ["col_react_patterns"],
+    updatedLabel: "1w ago",
+  },
+  {
+    id: "item_pg_cheatsheet",
+    title: "PostgreSQL psql cheat sheet",
+    type: "note",
+    description: "Common psql meta-commands.",
+    content:
+      "\\l list databases, \\c connect, \\dt list tables, \\d table describe, \\du list roles, \\timing toggle query timing.",
+    tags: ["postgres", "database"],
+    isFavorite: false,
+    isPinned: false,
+    collectionIds: ["col_interview_prep"],
+    updatedLabel: "2w ago",
+  },
+  {
+    id: "item_design_system_link",
+    title: "Refactoring UI",
+    type: "link",
+    description: "Practical visual design tips for developers.",
+    url: "https://www.refactoringui.com/",
+    tags: ["design", "ui", "reference"],
+    isFavorite: true,
+    isPinned: false,
+    collectionIds: ["col_useful_links"],
+    updatedLabel: "2w ago",
+  },
+  {
+    id: "item_fetch_retry",
+    title: "fetch with retry",
+    type: "snippet",
+    description: "Retry a fetch with exponential backoff.",
+    language: "typescript",
+    content: `export async function fetchRetry(url: string, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fetch(url)
+    } catch (err) {
+      if (i === retries - 1) throw err
+      await new Promise((r) => setTimeout(r, 2 ** i * 200))
+    }
+  }
+  throw new Error("unreachable")
+}`,
+    tags: ["fetch", "typescript", "network"],
+    isFavorite: false,
+    isPinned: false,
+    collectionIds: ["col_react_patterns"],
+    updatedLabel: "3w ago",
+  },
 ];

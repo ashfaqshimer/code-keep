@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { itemTypes, type ItemTypeSlug } from "@/lib/mock-data";
+import { itemTypes, type ItemType, type ItemTypeSlug } from "@/lib/mock-data";
 
 export const itemTypeIcons: Record<ItemTypeSlug, LucideIcon> = {
   snippet: Code,
@@ -31,3 +31,8 @@ export const itemTypeIcons: Record<ItemTypeSlug, LucideIcon> = {
 export const itemTypeColors = Object.fromEntries(
   itemTypes.map((type) => [type.slug, type.color]),
 ) as Record<ItemTypeSlug, string>;
+
+/** Full type metadata (name, color, count, …) keyed by slug, for label lookups. */
+export const itemTypesBySlug = Object.fromEntries(
+  itemTypes.map((type) => [type.slug, type]),
+) as Record<ItemTypeSlug, ItemType>;
