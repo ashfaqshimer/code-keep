@@ -19,7 +19,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { itemTypeColors, itemTypeIcons } from "@/lib/item-type-meta";
-import { collections, currentUser, itemTypes } from "@/lib/mock-data";
+import { getDashboardCollections } from "@/lib/db/collections";
+import { getItemTypeCounts } from "@/lib/db/items";
+import { currentUser, itemTypes } from "@/lib/mock-data";
 
 // How many collections to surface under "Recent".
 const RECENT_LIMIT = 5;
@@ -27,11 +29,17 @@ const RECENT_LIMIT = 5;
 /**
  * Dashboard sidebar (phase 2). Collapses off-canvas on desktop via the top-bar
  * trigger and renders as a Sheet drawer on mobile — both handled by the ShadCN
- * Sidebar primitives. Data comes straight from mock-data until the DB lands.
+ * Sidebar primitives. Library counts and collections come from the DB (scoped
+ * to the demo user); the footer user stays mock until auth lands.
  */
-export function AppSidebar() {
+export async function AppSidebar() {
+  const [collections, typeCounts] = await Promise.all([
+    getDashboardCollections(),
+    getItemTypeCounts(),
+  ]);
+
   const favoriteCollections = collections.filter((c) => c.isFavorite);
-  // mock-data is already ordered most-recent-first, so a slice is "recent".
+  // getDashboardCollections is already ordered most-recent-updated first.
   const recentCollections = collections.slice(0, RECENT_LIMIT);
 
   return (
@@ -74,7 +82,7 @@ export function AppSidebar() {
                       {type.isPro ? (
                         <Lock className="size-3 text-muted-foreground" />
                       ) : (
-                        type.count
+                        typeCounts[type.slug]
                       )}
                     </SidebarMenuBadge>
                   </SidebarMenuItem>
@@ -94,13 +102,19 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {favoriteCollections.map((collection) => {
-                const Icon = itemTypeIcons[collection.dominantType];
+                const Icon = collection.dominantType
+                  ? itemTypeIcons[collection.dominantType]
+                  : Box;
                 return (
                   <SidebarMenuItem key={collection.id}>
                     <SidebarMenuButton asChild>
                       <Link href={`/collections/${collection.id}`}>
                         <Icon
-                          style={{ color: itemTypeColors[collection.dominantType] }}
+                          style={{
+                            color: collection.dominantType
+                              ? itemTypeColors[collection.dominantType]
+                              : undefined,
+                          }}
                         />
                         <span>{collection.name}</span>
                       </Link>
@@ -123,21 +137,34 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {recentCollections.map((collection) => {
-                const Icon = itemTypeIcons[collection.dominantType];
-                return (
-                  <SidebarMenuItem key={collection.id}>
-                    <SidebarMenuButton asChild>
-                      <Link href={`/collections/${collection.id}`}>
-                        <Icon
-                          style={{ color: itemTypeColors[collection.dominantType] }}
-                        />
-                        <span>{collection.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {recentCollections.map((collection) => (
+                <SidebarMenuItem key={collection.id}>
+                  <SidebarMenuButton asChild>
+                    <Link href={`/collections/${collection.id}`}>
+                      <span
+                        className="size-2.5 shrink-0 rounded-full bg-muted-foreground"
+                        style={{
+                          backgroundColor: collection.dominantType
+                            ? itemTypeColors[collection.dominantType]
+                            : undefined,
+                        }}
+                      />
+                      <span>{collection.name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className="text-muted-foreground"
+                >
+                  <Link href="/collections">
+                    <ChevronRight />
+                    <span>View all collections</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
