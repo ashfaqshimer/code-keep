@@ -9,7 +9,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/utils";
-import type { ItemTypeSlug } from "@/lib/mock-data";
+import { itemTypes, type ItemTypeSlug } from "@/lib/mock-data";
 
 // No auth yet — everything is scoped to the seeded demo user.
 const DEMO_EMAIL = "demo@codekeep.io";
@@ -138,4 +138,37 @@ export async function getItemStats(): Promise<{
   ]);
 
   return { total, favorites };
+}
+
+/** An all-slugs-present count record initialized to zero. */
+function emptyTypeCounts(): Record<ItemTypeSlug, number> {
+  return Object.fromEntries(
+    itemTypes.map((type) => [type.slug, 0]),
+  ) as Record<ItemTypeSlug, number>;
+}
+
+/**
+ * Per-type item counts for the demo user, keyed by item-type slug
+ * (`ItemType.name`). Every system slug is present, defaulting to 0, so the
+ * sidebar can look up each type's badge count directly. Drives the sidebar
+ * Library counts (previously the mock `itemTypes[].count`).
+ */
+export async function getItemTypeCounts(): Promise<Record<ItemTypeSlug, number>> {
+  const user = await prisma.user.findUnique({
+    where: { email: DEMO_EMAIL },
+    select: { id: true },
+  });
+  if (!user) return emptyTypeCounts();
+
+  const rows = await prisma.item.findMany({
+    where: { userId: user.id },
+    select: { itemType: { select: { name: true } } },
+  });
+
+  const counts = emptyTypeCounts();
+  for (const row of rows) {
+    const slug = row.itemType.name as ItemTypeSlug;
+    if (slug in counts) counts[slug] += 1;
+  }
+  return counts;
 }
