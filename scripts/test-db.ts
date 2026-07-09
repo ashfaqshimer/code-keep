@@ -59,6 +59,43 @@ async function main() {
   console.log("\n✓ All tables queryable — row counts:");
   console.table(counts);
 
+  // 4. Surface the seeded data (if any) for a quick eyeball check. Read-only —
+  //    absence is reported, not treated as a failure (the DB may be un-seeded).
+  const demo = await prisma.user.findUnique({
+    where: { email: "demo@codekeep.io" },
+    select: { name: true, email: true, isPro: true, emailVerified: true },
+  });
+  if (demo) {
+    console.log("\n✓ Demo user present:");
+    console.table({
+      name: demo.name,
+      email: demo.email,
+      isPro: demo.isPro,
+      emailVerified: demo.emailVerified?.toISOString() ?? null,
+    });
+
+    const systemTypes = await prisma.itemType.findMany({
+      where: { isSystem: true },
+      orderBy: { name: "asc" },
+      select: { name: true, icon: true, color: true },
+    });
+    console.log(`\n✓ ${systemTypes.length} system item type(s):`);
+    console.table(systemTypes);
+
+    const collections = await prisma.collection.findMany({
+      orderBy: { name: "asc" },
+      select: { name: true, _count: { select: { items: true } } },
+    });
+    console.log(`\n✓ ${collections.length} collection(s) — item counts:`);
+    console.table(
+      Object.fromEntries(collections.map((c) => [c.name, c._count.items])),
+    );
+  } else {
+    console.log(
+      '\nℹ No demo user found — run "npm run db:seed" to populate sample data.',
+    );
+  }
+
   console.log("\n✅ Database test passed.");
 }
 
