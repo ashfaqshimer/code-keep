@@ -6,17 +6,24 @@ import { ItemCard } from "@/components/dashboard/item-card";
 import { RecentItemRow } from "@/components/dashboard/recent-item-row";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { collections, items, itemTypes } from "@/lib/mock-data";
+import { getDashboardCollections } from "@/lib/db/collections";
+import { items, itemTypes } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Dashboard · CodeKeep",
 };
 
+// Render per request so collection data reflects the live database rather than
+// being baked in at build time.
+export const dynamic = "force-dynamic";
+
 // How many of the most-recent items to surface.
 const RECENT_ITEMS_LIMIT = 10;
 
-export default function DashboardPage() {
-  // mock-data is already ordered most-recent-first.
+export default async function DashboardPage() {
+  const collections = await getDashboardCollections();
+
+  // Pinned/recent items still come from mock-data until items move to the DB.
   const pinnedItems = items.filter((item) => item.isPinned);
   const recentItems = items.slice(0, RECENT_ITEMS_LIMIT);
 

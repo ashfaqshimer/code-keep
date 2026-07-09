@@ -8,7 +8,7 @@ generator client {
   output              = "../src/generated/prisma"
   runtime             = "nodejs"
   moduleFormat        = "esm"
-  importFileExtension = "js"
+  importFileExtension = "ts"
 }
 
 datasource db {
