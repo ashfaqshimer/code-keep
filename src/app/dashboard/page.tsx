@@ -7,7 +7,7 @@ import { RecentItemRow } from "@/components/dashboard/recent-item-row";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { getDashboardCollections } from "@/lib/db/collections";
-import { items, itemTypes } from "@/lib/mock-data";
+import { getItemStats, getPinnedItems, getRecentItems } from "@/lib/db/items";
 
 export const metadata: Metadata = {
   title: "Dashboard · CodeKeep",
@@ -21,16 +21,17 @@ export const dynamic = "force-dynamic";
 const RECENT_ITEMS_LIMIT = 10;
 
 export default async function DashboardPage() {
-  const collections = await getDashboardCollections();
-
-  // Pinned/recent items still come from mock-data until items move to the DB.
-  const pinnedItems = items.filter((item) => item.isPinned);
-  const recentItems = items.slice(0, RECENT_ITEMS_LIMIT);
+  const [collections, pinnedItems, recentItems, itemStats] = await Promise.all([
+    getDashboardCollections(),
+    getPinnedItems(),
+    getRecentItems(RECENT_ITEMS_LIMIT),
+    getItemStats(),
+  ]);
 
   const stats = {
-    items: itemTypes.reduce((sum, type) => sum + type.count, 0),
+    items: itemStats.total,
     collections: collections.length,
-    favoriteItems: items.filter((item) => item.isFavorite).length,
+    favoriteItems: itemStats.favorites,
     favoriteCollections: collections.filter((c) => c.isFavorite).length,
   };
 
