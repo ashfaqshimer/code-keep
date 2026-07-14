@@ -9,10 +9,8 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/utils";
+import { getDemoUserId } from "@/lib/db/user";
 import { itemTypes, type ItemTypeSlug } from "@/lib/mock-data";
-
-// No auth yet — everything is scoped to the seeded demo user.
-const DEMO_EMAIL = "demo@codekeep.io";
 
 export interface DashboardItem {
   id: string;
@@ -83,14 +81,11 @@ function toDashboardItem(row: ItemRow): DashboardItem {
  * item cards. Empty when the user has no pinned items.
  */
 export async function getPinnedItems(): Promise<DashboardItem[]> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_EMAIL },
-    select: { id: true },
-  });
-  if (!user) return [];
+  const userId = await getDemoUserId();
+  if (!userId) return [];
 
   const items = await prisma.item.findMany({
-    where: { userId: user.id, isPinned: true },
+    where: { userId, isPinned: true },
     orderBy: { updatedAt: "desc" },
     select: itemSelect,
   });
@@ -103,14 +98,11 @@ export async function getPinnedItems(): Promise<DashboardItem[]> {
  * the dashboard recent-items list.
  */
 export async function getRecentItems(limit: number): Promise<DashboardItem[]> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_EMAIL },
-    select: { id: true },
-  });
-  if (!user) return [];
+  const userId = await getDemoUserId();
+  if (!userId) return [];
 
   const items = await prisma.item.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { updatedAt: "desc" },
     take: limit,
     select: itemSelect,
@@ -126,15 +118,12 @@ export async function getItemStats(): Promise<{
   total: number;
   favorites: number;
 }> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_EMAIL },
-    select: { id: true },
-  });
-  if (!user) return { total: 0, favorites: 0 };
+  const userId = await getDemoUserId();
+  if (!userId) return { total: 0, favorites: 0 };
 
   const [total, favorites] = await Promise.all([
-    prisma.item.count({ where: { userId: user.id } }),
-    prisma.item.count({ where: { userId: user.id, isFavorite: true } }),
+    prisma.item.count({ where: { userId } }),
+    prisma.item.count({ where: { userId, isFavorite: true } }),
   ]);
 
   return { total, favorites };
@@ -154,21 +143,29 @@ function emptyTypeCounts(): Record<ItemTypeSlug, number> {
  * Library counts (previously the mock `itemTypes[].count`).
  */
 export async function getItemTypeCounts(): Promise<Record<ItemTypeSlug, number>> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_EMAIL },
-    select: { id: true },
-  });
-  if (!user) return emptyTypeCounts();
+  const userId = await getDemoUserId();
+  if (!userId) return emptyTypeCounts();
 
-  const rows = await prisma.item.findMany({
-    where: { userId: user.id },
-    select: { itemType: { select: { name: true } } },
+  // Aggregate in the database (group by type) rather than loading every row and
+  // tallying in JS. groupBy keys by the scalar `itemTypeId`, so resolve those
+  // ids to their type name (the slug) with one small lookup.
+  const grouped = await prisma.item.groupBy({
+    by: ["itemTypeId"],
+    where: { userId },
+    _count: { _all: true },
   });
+  if (grouped.length === 0) return emptyTypeCounts();
+
+  const types = await prisma.itemType.findMany({
+    where: { id: { in: grouped.map((group) => group.itemTypeId) } },
+    select: { id: true, name: true },
+  });
+  const slugById = new Map(types.map((type) => [type.id, type.name]));
 
   const counts = emptyTypeCounts();
-  for (const row of rows) {
-    const slug = row.itemType.name as ItemTypeSlug;
-    if (slug in counts) counts[slug] += 1;
+  for (const group of grouped) {
+    const slug = slugById.get(group.itemTypeId) as ItemTypeSlug | undefined;
+    if (slug && slug in counts) counts[slug] = group._count._all;
   }
   return counts;
 }
