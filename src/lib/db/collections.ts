@@ -9,12 +9,12 @@
  */
 import "server-only";
 
+import { cache } from "react";
+
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/utils";
+import { getDemoUserId } from "@/lib/db/user";
 import type { ItemTypeSlug } from "@/lib/mock-data";
-
-// No auth yet — everything is scoped to the seeded demo user.
-const DEMO_EMAIL = "demo@codekeep.io";
 
 export interface DashboardCollection {
   id: string;
@@ -32,17 +32,17 @@ export interface DashboardCollection {
 
 /**
  * All of the demo user's collections, newest-updated first, shaped for the
- * dashboard collection cards.
+ * dashboard collection cards. Wrapped in `cache()` so the dashboard layout
+ * (sidebar) and page share a single query per request.
  */
-export async function getDashboardCollections(): Promise<DashboardCollection[]> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_EMAIL },
-    select: { id: true },
-  });
-  if (!user) return [];
+export const getDashboardCollections = cache(async (): Promise<
+  DashboardCollection[]
+> => {
+  const userId = await getDemoUserId();
+  if (!userId) return [];
 
   const collections = await prisma.collection.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
@@ -77,4 +77,4 @@ export async function getDashboardCollections(): Promise<DashboardCollection[]> 
       types,
     };
   });
-}
+});

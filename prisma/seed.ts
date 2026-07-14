@@ -18,7 +18,9 @@ import { ContentType } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
 const DEMO_EMAIL = "demo@codekeep.io";
-const DEMO_PASSWORD = "12345678";
+// Sourced from the environment so no working credential is committed. Falls back
+// to a clearly-labeled dev value for local seeding only.
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "codekeep-dev-password";
 
 // --- System item types (Lucide icon names + spec colors) --------------------
 
@@ -314,6 +316,14 @@ function contentTypeFor(type: TypeName): ContentType {
 }
 
 async function main() {
+  // This seed wipes and recreates the demo user, so it must never target a
+  // production database.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Refusing to seed with NODE_ENV=production — the seed wipes the demo user and must only run against a dev database.",
+    );
+  }
+
   console.log("→ Seeding database...\n");
 
   // 1. Reset prior seed data so re-runs are idempotent. Deleting the demo user
