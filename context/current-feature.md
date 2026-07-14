@@ -1,64 +1,18 @@
 # Current Feature
 
-Stats & Sidebar from the database — make the **sidebar** DB-backed to match the
-already-DB-backed main area. The sidebar still reads entirely from
-`src/lib/mock-data.ts` (Library per-type counts, favorite + recent collections,
-current user); this feature sources it from Neon via Prisma. Same layout/design.
-Spec: `context/features/stats-sidebar-spec.md`.
-
-Note: the main-area stat tiles (Items, Collections, Favorite items, Favorite
-collections) and the Pinned/Recent/Collections sections are already DB-backed
-from the two prior features, so the spec's "stats in the main area" requirement
-is effectively satisfied — the remaining work is the sidebar.
+<!-- Load a feature spec or description here to begin. -->
 
 ## Status
 
-Completed
+Not Started
 
 ## Goals
 
-- **Sidebar Library (per-type counts):** show the seven system item types with
-  their icons, each linking to `/items/[type]`, with a real per-type item count
-  from the DB instead of the mock `itemTypes[].count`. Keep the Pro lock icon on
-  `file` / `image` (metadata still from `item-type-meta.ts` / `mock-data.ts`).
-  - Add a per-type count function to `src/lib/db/items.ts` (e.g.
-    `getItemTypeCounts()`), scoped to the demo user, returning counts keyed by
-    `ItemTypeSlug` (from `ItemType.name`).
-- **Sidebar collections (Favorites + Recent):** drive both lists from the DB via
-  the existing `getDashboardCollections()` in `src/lib/db/collections.ts`
-  (already returns favorites, recency order, and `dominantType`) instead of the
-  mock `collections` array.
-  - **Favorites:** keep the star icon badge.
-  - **Recent:** replace the per-collection type *icon* with a small **colored
-    circle** based on the collection's most-used item type (`dominantType` →
-    `itemTypeColors`).
-- Add a **"View all collections"** link under the Recent collections list that
-  navigates to `/collections`.
-- Make `AppSidebar` an async server component that fetches directly (it has no
-  hooks / `"use client"`), or fetch in the dashboard `layout.tsx` and pass down
-  — no client fetch, no API route.
-- Keep the current design (reference
-  `context/screenshots/dashboard-ui-main.png`).
+<!-- Bullet points of what success looks like. -->
 
 ## Notes
 
-- No auth yet — scope all queries to the seeded demo user (`demo@codekeep.io`),
-  same as `collections.ts` / `items.ts`.
-- `src/lib/db/items.ts` already exists (`getPinnedItems`, `getRecentItems`,
-  `getItemStats`) — this feature adds the per-type count function; the spec
-  predates the file, so "create items.ts" is already done.
-- The DB `ItemType.name` matches the existing `ItemTypeSlug` union; reuse
-  `item-type-meta.ts` for icons/colors and `mock-data.ts` `itemTypes` for the
-  static per-type metadata (plural label, color, `isPro`) — only the counts move
-  to the DB.
-- `currentUser` in the sidebar footer stays mock for now (no auth) — out of
-  scope unless trivially derivable from the demo user.
-- Don't regress the already-DB-backed main area (stats, Pinned, Recent,
-  Collections) from the prior two features.
-- Read-only feature — never `prisma db push` or hand-edit the DB.
-- Follow the DB + Data Fetching sections of `context/coding-standards.md`.
-- Verify with `npm run build` and in the browser against the screenshot before
-  committing. Do not commit without permission.
+<!-- Additional context, constraints, or details from the spec. -->
 
 ## History
 
@@ -73,3 +27,4 @@ Completed
 - **2026-07-09** — Completed Seed data: added `prisma/seed.ts` (run via `prisma db seed` → new `db:seed` npm script; wired through Prisma 7's `migrations.seed` in `prisma.config.ts`). Installed `bcryptjs` (+ `@types/bcryptjs`) and seeded a demo user (`demo@codekeep.io`, password hashed at 12 rounds, `isPro: false`, `emailVerified: now`), the 7 system item types (Lucide icon names + spec colors, `isSystem: true`), and 5 collections with 18 sample items linked via the `ItemCollection` join (React Patterns ×3, AI Workflows ×3, DevOps ×4, Terminal Commands ×4, Design Resources ×4) — each with real content/URLs, `contentType` mapped per type (TEXT/URL), languages on snippets/commands, and a couple pinned/favorite. Seed is idempotent: it deletes the demo user (cascading their items/collections) and the system types up front, then recreates — system types can't be upserted by their `(userId, name)` unique because `userId` is null, so a delete-then-create reset was used instead. Verified: two consecutive runs held counts at 1 user / 7 types / 5 collections / 18 items (via `db:test`), lint ✓, `next build` ✓.
 - **2026-07-09** — Completed Stats & Sidebar from the database: made the sidebar DB-backed to match the already-DB-backed main area. Added `getItemTypeCounts()` to `src/lib/db/items.ts` (returns a `Record<ItemTypeSlug, number>` with all seven system slugs present, defaulting to 0 via a shared `emptyTypeCounts()` derived from mock-data's `itemTypes`; scoped to the demo user, tallying `ItemType.name` in-memory like `collections.ts`). Converted `AppSidebar` to an async server component that fetches `getDashboardCollections()` + `getItemTypeCounts()` in parallel: Library badges now use real per-type DB counts (Pro lock on file/image unchanged), and the Favorites + Recent collection lists come from the DB. Favorites keep the star badge; Recent collections now render a small colored circle keyed to the collection's `dominantType` (via `itemTypeColors`) instead of the type icon. Added a "View all collections" link (→ `/collections`) under the Recent list. Since `DashboardCollection.dominantType` is nullable, guarded the favorites icon/color lookups (empty collection → `Box` icon / muted circle). The footer `currentUser` stays mock (no auth yet). `/dashboard` was already `force-dynamic`, so the layout's new sidebar DB fetch renders per-request (build keeps `/dashboard` dynamic, no prerender of live data). Verified: lint ✓, `next build` ✓, and against the live DB the sidebar renders correctly — Library counts Snippets 4 / Prompts 3 / Commands 5 / Notes 0 / Links 6 (sum 18 = total items), Files/Images locked; Favorites = AI Workflows + React Patterns (2, starred); Recent = 5 collections with correct dominant-type circles (snippet blue, prompt purple, command orange, link emerald); "View all collections" → `/collections`.
 - **2026-07-09** — Completed Dashboard items from the database: added `src/lib/db/items.ts` (`server-only`, mirroring `collections.ts`) with `getPinnedItems()`, `getRecentItems(limit)`, and `getItemStats()` — all scoped to the seeded demo user via a shared `select` + `toDashboardItem` mapper that shapes each row into a new `DashboardItem` type (type slug from `ItemType.name`, tags from the `Tag` relation, relative `updatedLabel` via `formatRelativeTime`, nullable DB columns coerced to `undefined`). Repointed `ItemCard` and `RecentItemRow` from the mock `ItemSummary` to `DashboardItem` (field-compatible, no markup changes). The dashboard page now fetches collections + pinned + recent + item stats in parallel with `Promise.all`, and the Items + Favorite items stat tiles are DB-backed (previously the mock `itemTypes` sum / mock `items` array); Collections stats stay DB-backed from the prior feature. Empty-pinned is handled by the existing page conditional. `mock-data.ts` still backs the sidebar's per-type counts (out of scope). Verified: lint ✓, `next build` ✓ (`/dashboard` dynamic), and in-browser the live data matches the seed exactly — 18 Items / 5 Collections / 0 Favorite items (seed favorites only collections) / 2 Favorite collections, 2 pinned items (useDebounce, Code review prompt), real collection cards and recent list.
+- **2026-07-15** — Completed Dashboard Data-Layer Hardening: a maintenance pass on the four medium-severity findings from the `code-scanner` audit (spec: `context/maintenance/dashboard-data-layer-hardening-spec.md`). (1) **Deduped per-request DB round-trips** — added `src/lib/db/user.ts` with a `cache()`-wrapped `getDemoUserId()` resolver (also now the single home of `DEMO_EMAIL`), and repointed all five collection/item fetchers at it so a `/dashboard` request does one demo-user lookup instead of ~6; wrapped `getDashboardCollections()` in `cache()` so the sidebar (layout) and page share one query instead of running it twice. (2) **Aggregated per-type counts in Postgres** — rewrote `getItemTypeCounts()` from load-all-rows-and-tally-in-JS to `prisma.item.groupBy({ by: ["itemTypeId"], _count })` plus a ≤7-row `itemType` id→name lookup; same `Record<ItemTypeSlug, number>` contract (all slugs, default 0). (3) **Added error/loading UI** — `src/app/dashboard/loading.tsx` (skeleton mirroring the stat row + collections grid + recent list) and a `"use client"` `src/app/dashboard/error.tsx` boundary with a `reset()` retry; `db/*` helpers still throw so the boundary catches transient Neon errors/cold starts. (4) **Removed the hardcoded seed credential** — `prisma/seed.ts` now reads `SEED_DEMO_PASSWORD` (labeled dev fallback) and refuses to run when `NODE_ENV=production`; documented the var in `.env.example`. Low-severity scan items (dead mock data, full 4-file `DEMO_EMAIL` dedup, non-functional top-bar button) left out of scope; `seed.ts`/`scripts/test-db.ts` keep their own `DEMO_EMAIL` (can't import `server-only`). Verified: lint ✓, `next build` ✓ (`/dashboard` still dynamic), and against the live DB the happy path is unchanged — stats 18/5/0/2, sidebar Library Snippets 4 / Prompts 3 / Commands 5 / Notes 0 / Links 6 (sum 18), Files/Images locked, "View all collections" present, no console errors. Error boundary verified structurally (build + Next convention), not by forcing a DB failure.
